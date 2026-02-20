@@ -53,13 +53,13 @@ def process_block(data: bytearray, offset: int, ks: bytearray, is_encrypt: bool)
         transformed[i] ^= ks[i]
     data[offset:offset+16] = transformed
 
-def verify_size(input_path: str, data: bytes, init_ks: bytes):
+def verify_size(input_path: str, data: bytes):
     buf = bytearray(data)
     length = len(buf)
     block_size = 16
     num_full = length // block_size
     if num_full == 0:
-        raise ValueError("文件大小必须至少为16字节！")
+        raise ValueError(f"{input_path} 文件过小：必须至少为16字节！")
 
 def process_chunk(data: bytes, init_ks: bytes, is_encrypt: bool) -> bytes:
     ks = bytearray(init_ks)
@@ -109,7 +109,7 @@ def decrypt_file(input_path: str, output_path: str):
                 break
             counter = struct.pack('<Q', block_idx) + b'\x00' * 8
             init_ks = aes_ecb_encrypt(KEY_MATERIAL2, counter)
-            verify_size(input_path, chunk, init_ks)
+            verify_size(input_path, chunk)
             plain = process_chunk(chunk, init_ks, is_encrypt=False)
             fout.write(plain)
             block_idx += 1
@@ -124,7 +124,7 @@ def encrypt_file(input_path: str, output_path: str):
                 break
             counter = struct.pack('<Q', block_idx) + b'\x00' * 8
             init_ks = aes_ecb_encrypt(KEY_MATERIAL2, counter)
-            verify_size(input_path, chunk, init_ks)
+            verify_size(input_path, chunk)
             cipher = process_chunk(chunk, init_ks, is_encrypt=True)
             fout.write(cipher)
             block_idx += 1
